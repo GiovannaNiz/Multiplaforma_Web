@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Umidade e Temperatura</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4A4F58;
+            margin-top: 30px;
+            font-size: 2.5rem;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        input[type="date"],
+        input[type="time"] {
+            width: calc(100% - 24px);
+            max-width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="date"]:focus,
+        input[type="time"]:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            width: 200px;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #28a745, #007bff);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .result {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            color: #333;
+            width: 90%;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #555;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            input[type="date"],
+            input[type="time"] {
+                width: 100%;
+            }
+
+            .result {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Controle de Umidade e Temperatura</h1>
+
+    <div class="container">
+        <label for="dataHora">Selecione uma data:</label>
+        <input type="date" id="dataHora" name="dataHora">
+
+        <label for="hora">Selecione uma hora:</label>
+        <input type="time" id="hora" name="hora" step="1">
+
+        <div class="button-container">
+            <button id="verificarButton"><i class="fas fa-search"></i> Verificar</button>
+            <button id="verTodosButton"><i class="fas fa-eye"></i> Ver Todos</button>
+        </div>
+
+        <div id="resultado" class="result"></div>
+    </div>
+
+    <footer>
+        <p>Desenvolvido por <a href="#">Giovanna Niz</a></p>
+    </footer>
+
+    <script>
+        document.getElementById("verificarButton").addEventListener("click", function() {
+            const dataHora = document.getElementById("dataHora").value;
+            const hora = document.getElementById("hora").value;
+
+            if (!dataHora || !hora) {
+                alert("Por favor, selecione uma data e uma hora.");
+                return;
+            }
+
+            // Adiciona os segundos à hora
+            const horaCompleta = `${hora}`;
+
+            fetch('/verificar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dataHora: dataHora, hora: horaCompleta })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Erro ao buscar dados:', error);
+                document.getElementById("resultado").innerHTML = `<strong>Erro ao buscar dados. Tente novamente mais tarde.</strong>`;
+            });
+        });
+
+        document.getElementById("verTodosButton").addEventListener("click", function() {
+            fetch('/ver-todos')
+            .then(response => response.json())
+            .then(data => {
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Erro ao buscar todos os dados:', error);
+                document.getElementById("resultado").innerHTML = `<strong>Erro ao buscar dados. Tente novamente mais tarde.</strong>`;
+            });
+        });
+
+        function displayResults(data) {
+            const resultadosDiv = document.getElementById("resultado");
+            if (data.message) {
+                resultadosDiv.innerHTML = `<strong>${data.message}</strong>`;
+            } else {
+                let resultHTML = "<h3>Dados encontrados:</h3><ul>";
+                data.forEach(item => {
+                    resultHTML += `
+                    <li><strong>Data:</strong> ${item.date} | <strong>Hora:</strong> ${item.time} | 
+                    <strong>Temperatura:</strong> ${item.temp}°C | <strong>Umidade:</strong> ${item.hmd}%</li>`;
+                });
+                resultHTML += "</ul>";
+                resultadosDiv.innerHTML = resultHTML;
+            }
+        }
+    </script>
+</body>
+</html>
